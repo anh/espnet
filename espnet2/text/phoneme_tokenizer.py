@@ -172,7 +172,7 @@ class PhonemeTokenizer(AbsTokenizer):
         elif g2p_type == "espeak_ng_arabic":
             self.g2p = Phonemizer(language="ar", backend="espeak", with_stress=True)
         elif g2p_type == "g2p_vi":
-            self.g2p == Phonemizer(language="vi", backend="espeak", with_stress=True)
+            self.g2p = Phonemizer(language="vi", backend="espeak", with_stress=True)
         else:
             raise NotImplementedError(f"Not supported: g2p_type={g2p_type}")
 
