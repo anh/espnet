@@ -9,7 +9,7 @@ try:
 except ImportError:
     vietnamese_cleaners = None
 
-import espnet2.text import vietcleaners
+from espnet2.text import vietcleaners
 
 
 class TextCleaner:
