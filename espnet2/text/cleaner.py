@@ -9,6 +9,8 @@ try:
 except ImportError:
     vietnamese_cleaners = None
 
+import espnet2.text import vietcleaners
+
 
 class TextCleaner:
     """Text cleaner.
@@ -40,6 +42,8 @@ class TextCleaner:
                 if vietnamese_cleaners is None:
                     raise RuntimeError("Please install underthesea")
                 text = vietnamese_cleaners.vietnamese_cleaner(text)
+            elif t == "viet":
+                text = vietcleaners.basic_cleaner(text)
             else:
                 raise RuntimeError(f"Not supported: type={t}")
 
