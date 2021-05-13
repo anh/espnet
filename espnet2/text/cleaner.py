@@ -43,7 +43,7 @@ class TextCleaner:
                     raise RuntimeError("Please install underthesea")
                 text = vietnamese_cleaners.vietnamese_cleaner(text)
             elif t == "viet":
-                text = vietcleaners.basic_cleaner(text)
+                text = vietcleaners.basic_cleaners(text)
             else:
                 raise RuntimeError(f"Not supported: type={t}")
 
