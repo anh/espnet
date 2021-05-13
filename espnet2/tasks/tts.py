@@ -191,6 +191,7 @@ class TTSTask(AbsTask):
                 "pypinyin_g2p",
                 "pypinyin_g2p_phone",
                 "espeak_ng_arabic",
+                "g2p_vi",
             ],
             default=None,
             help="Specify g2p method if --token_type=phn",
