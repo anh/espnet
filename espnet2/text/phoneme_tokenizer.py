@@ -175,9 +175,11 @@ class PhonemeTokenizer(AbsTokenizer):
         elif g2p_type == "g2p_vi":
             self.g2p = Phonemizer(language="vi",
                     backend="espeak",
+                    word_separator=" | ",
                     preserve_punctuation=True,
-                    punctuation_marks=';:,.!?¡¿—…"«»“”',
+                    punctuation_marks=';:,.!?', 
                     with_stress=True,
+                    strip=False,
                     language_switch='remove-flags')
         else:
             raise NotImplementedError(f"Not supported: g2p_type={g2p_type}")
