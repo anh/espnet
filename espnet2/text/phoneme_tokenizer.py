@@ -3,6 +3,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
+import re
 import warnings
 
 import g2p_en
@@ -107,6 +108,82 @@ class G2p_en:
             phones = list(filter(lambda s: s != " ", phones))
         return phones
 
+_vowels = 'iyɨʉɯuɪʏʊeøɘəɵɤoɛœɜɞʌɔæɐaɶɑɒᵻ'
+_non_pulmonic_consonants = 'ʘɓǀɗǃʄǂɠǁʛ'
+_pulmonic_consonants = 'pbtdʈɖcɟkɡqɢʔɴŋɲɳnɱmʙrʀⱱɾɽɸβfvθðszʃʒʂʐçʝxɣχʁħʕhɦɬɮʋɹɻjɰlɭʎʟ'
+_suprasegmentals = 'ˈˌːˑ'
+_other_symbols = 'ʍwɥʜʢʡɕʑɺɧ'
+_diacrilics = 'ɚ˞ɫ'
+_phonemes = sorted(list(
+    _vowels + _non_pulmonic_consonants + _pulmonic_consonants + _suprasegmentals + _other_symbols + _diacrilics))
+_punctuations = '!,-.:;? \'()'
+_alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäüößÄÖÜ'
+
+all_phonemes = sorted(list(_phonemes) + list(_punctuations) + list("0123456789"))
+
+class AsIdeasPhonemizer:
+    """Code borrowed from: https://github.com/as-ideas/TransformerTTS/blob/main/data/text/tokenizer.py
+    """
+
+    def __init__(self, language: str, with_stress: bool, njobs=4):
+        from phonemizer import phonemize
+        self.language = language
+        self.njobs = njobs
+        self.with_stress = with_stress
+        self.special_hyphen = '—'
+        self.punctuation = ';:,.!?¡¿—…"«»“”'
+        self._whitespace_re = re.compile(r'\s+')
+        self._whitespace_punctuation_re = re.compile(f'\s*([{_punctuations}])\s*')
+        self.phonemize = phonemize 
+
+    def __call__(self, text: Union[str, list], with_stress=None, njobs=None, language=None) -> Union[str, list]:
+        language = language or self.language
+        njobs = njobs or self.njobs
+        with_stress = with_stress or self.with_stress
+        # phonemizer does not like hyphens.
+        text = self._preprocess(text)
+        phonemes = self.phonemize(text,
+                             language=language,
+                             backend='espeak',
+                             strip=True,
+                             preserve_punctuation=True,
+                             with_stress=with_stress,
+                             punctuation_marks=self.punctuation,
+                             njobs=njobs,
+                             language_switch='remove-flags')
+        return self._postprocess(phonemes)
+    
+    def _preprocess_string(self, text: str):
+        text = text.replace('-', self.special_hyphen)
+        return text
+    
+    def _preprocess(self, text: Union[str, list]) -> Union[str, list]:
+        if isinstance(text, list):
+            return [self._preprocess_string(t) for t in text]
+        elif isinstance(text, str):
+            return self._preprocess_string(text)
+        else:
+            raise TypeError(f'{self} input must be list or str, not {type(text)}')
+    
+    def _collapse_whitespace(self, text: str) -> str:
+        text = re.sub(self._whitespace_re, ' ', text)
+        return re.sub(self._whitespace_punctuation_re, r'\1', text)
+    
+    def _postprocess_string(self, text: str) -> str:
+        text = text.replace(self.special_hyphen, '-')
+        text = ''.join([c for c in text if c in all_phonemes])
+        text = self._collapse_whitespace(text)
+        text = text.strip()
+        return text
+    
+    def _postprocess(self, text: Union[str, list]) -> Union[str, list]:
+        if isinstance(text, list):
+            return [self._postprocess_string(t) for t in text]
+        elif isinstance(text, str):
+            return self._postprocess_string(text)
+        else:
+            raise TypeError(f'{self} input must be list or str, not {type(text)}')
+
 
 class Phonemizer:
     """Phonemizer module for various languages.
@@ -173,14 +250,7 @@ class PhonemeTokenizer(AbsTokenizer):
         elif g2p_type == "espeak_ng_arabic":
             self.g2p = Phonemizer(language="ar", backend="espeak", with_stress=True)
         elif g2p_type == "g2p_vi":
-            self.g2p = Phonemizer(language="vi",
-                    backend="espeak",
-                    word_separator=" | ",
-                    preserve_punctuation=True,
-                    punctuation_marks=';:,.!?', 
-                    with_stress=True,
-                    strip=False,
-                    language_switch='remove-flags')
+            self.g2p = AsIdeasPhonemizer(language="vi",with_stress=True)
         else:
             raise NotImplementedError(f"Not supported: g2p_type={g2p_type}")
 
