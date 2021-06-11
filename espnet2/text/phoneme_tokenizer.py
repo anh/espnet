@@ -125,7 +125,7 @@ class AsIdeasPhonemizer:
     """Code borrowed from: https://github.com/as-ideas/TransformerTTS/blob/main/data/text/tokenizer.py
     """
 
-    def __init__(self, language: str, with_stress: bool, njobs=4):
+    def __init__(self, language: str, with_stress: bool, njobs=4, space_sym='<space>'):
         from phonemizer import phonemize
         self.language = language
         self.njobs = njobs
@@ -134,7 +134,8 @@ class AsIdeasPhonemizer:
         self.punctuation = ';:,.!?¡¿—…"«»“”'
         self._whitespace_re = re.compile(r'\s+')
         self._whitespace_punctuation_re = re.compile(f'\s*([{_punctuations}])\s*')
-        self.phonemize = phonemize 
+        self.phonemize = phonemize
+        self.space_sym = space_sym
 
     def __call__(self, text: Union[str, list], with_stress=None, njobs=None, language=None) -> Union[str, list]:
         language = language or self.language
@@ -174,7 +175,14 @@ class AsIdeasPhonemizer:
         text = ''.join([c for c in text if c in all_phonemes])
         text = self._collapse_whitespace(text)
         text = text.strip()
-        return text
+        text = list(text)
+        retval = []
+        for t in text:
+            if t == " ":
+                retval.append('<space>')
+            else:
+                retval.append(t)
+        return retval
     
     def _postprocess(self, text: Union[str, list]) -> Union[str, list]:
         if isinstance(text, list):
